@@ -196,9 +196,11 @@ void LBS(double angle, MatrixXd V, MatrixXi F, MatrixXd W)
 	// 	U.row(i) = u.transpose();
 	// }
 
-	U.col(0) = W.array().col(0) * (T1 * V.transpose()).transpose().array().col(0) + W.array().col(1) * (T2 * V.transpose()).transpose().array().col(0);
-	U.col(1) = W.array().col(0) * (T1 * V.transpose()).transpose().array().col(1) + W.array().col(1) * (T2 * V.transpose()).transpose().array().col(1);
-	U.col(2) = W.array().col(0) * (T1 * V.transpose()).transpose().array().col(2) + W.array().col(1) * (T2 * V.transpose()).transpose().array().col(2);
+	// U.col(0) = W.array().col(0) * (V * T1.transpose()).array().col(0) + W.array().col(1) * (V * T2.transpose()).array().col(0);
+	// U.col(1) = W.array().col(0) * (V * T1.transpose()).array().col(1) + W.array().col(1) * (V * T2.transpose()).array().col(1);
+	// U.col(2) = W.array().col(0) * (V * T1.transpose()).array().col(2) + W.array().col(1) * (V * T2.transpose()).array().col(2);
+
+	U = (V * T1.transpose()).array().colwise() * W.col(0).array() + (V * T2.transpose()).array().colwise() * W.col(1).array();
 
 	PrintPLY("LBS", U, F, W);
 }
