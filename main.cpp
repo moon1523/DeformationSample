@@ -76,35 +76,40 @@ int main(int argc, char** argv)
 	}
 	ifs.close();
 
-	MatrixXd W;
-	W.resize(vertNo, 2);
-//	// Linear weights
-//	for (auto itr:zMap) {
-//		for (auto itr2:itr.second) {
-//			W(itr2,0) =  -1/6. * itr.first + 0.5;
-//			W(itr2,1) =  1 - W(itr2,0);
-//		}
-//	}
+	double minZ = V.col(2).minCoeff();
+	double maxZ = V.col(2).maxCoeff();
 
-	// Quadratic weights
-	for (auto itr:zMap) {
-		for (auto itr2:itr.second) {
-			if (itr.first < 0) {
-				W(itr2,0) = -1/18. * (itr.first + 3) * (itr.first + 3) + 1;
-				W(itr2,1) = 1 - W(itr2,0);
-			}
-			else {
-				W(itr2,0) = 1/18. * (itr.first - 3) * (itr.first - 3);
-				W(itr2,1) = 1 - W(itr2,0);
-			}
-		}
-	}
-	ofstream ofs("w.txt");
-	ofs << W << endl;
+	// Linear weights
+	MatrixXd W = MatrixXd::Ones(V.rows(), 2);
+	W.col(1) = (V.col(2).array() - minZ) * ( 1 / (maxZ - minZ));
+	W.col(0) -= W.col(1);
+
+	// MatrixXd W;
+	// W.resize(vertNo, 2);
+	// //	// Linear weights
+	// //	for (auto itr:zMap) {
+	// //		for (auto itr2:itr.second) {
+	// //			W(itr2,0) =  -1/6. * itr.first + 0.5;
+	// //			W(itr2,1) =  1 - W(itr2,0);
+	// //		}
+	// //	}
+	
+	// // Quadratic weights
+	// for (auto itr:zMap) {
+	// 	for (auto itr2:itr.second) {
+	// 		if (itr.first < 0) {
+	// 			W(itr2,0) = -1/18. * (itr.first + 3) * (itr.first + 3) + 1;
+	// 			W(itr2,1) = 1 - W(itr2,0);
+	// 		}
+	// 		else {
+	// 			W(itr2,0) = 1/18. * (itr.first - 3) * (itr.first - 3);
+	// 			W(itr2,1) = 1 - W(itr2,0);
+	// 		}
+	// 	}
+	// }
 
 	LBS(angle, V, F, W);
 	DQS(angle, V, F, W);
-
 
 	return 0;
 }
@@ -139,9 +144,6 @@ void DQS(double angle, MatrixXd V, MatrixXi F, MatrixXd W)
 	dual_quat.push_back(Dual_quat_cu(mat1));
 	dual_quat.push_back(Dual_quat_cu(mat2));
 
-
-	ofstream ofs("DQ.txt");
-
 	for (int i=0; i<V.rows(); i++)
 	{
 		Dual_quat_cu dq_blend;
@@ -166,15 +168,6 @@ void DQS(double angle, MatrixXd V, MatrixXi F, MatrixXd W)
 				dq_blend = dq_blend + dual_quat[j] * (-W(i,j));
 			else
 				dq_blend = dq_blend + dual_quat[j] * W(i,j);
-
-
-//			Quat_cu non_dualQ, dualQ;
-//			non_dualQ = dq_blend.get_non_dual_part();
-//			dualQ = dq_blend.get_dual_part();
-//
-//			ofs << non_dualQ.w() << " " << non_dualQ.i() << " " << non_dualQ.j() << " " << non_dualQ.k() << " | ";
-//			ofs << dualQ.w() << " " << dualQ.i() << " " << dualQ.j() << " " << dualQ.k() << endl << endl;
-
 		}
 		Point3 v(V(i,0), V(i,1), V(i,2));
 		Point3 u = dq_blend.transform(v);
@@ -198,10 +191,15 @@ void LBS(double angle, MatrixXd V, MatrixXi F, MatrixXd W)
 	U.resize(V.rows(), 3);
 	U = V;
 
-	for (int i=0; i<U.rows(); i++) {
-		Vector3d u = W(i,0) * T1 * U.row(i).transpose() + W(i,1) * T2 * U.row(i).transpose();
-		U.row(i) = u.transpose();
-	}
+	// for (int i=0; i<U.rows(); i++) {
+	// 	Vector3d u = W(i,0) * T1 * U.row(i).transpose() + W(i,1) * T2 * U.row(i).transpose();
+	// 	U.row(i) = u.transpose();
+	// }
+
+	U.col(0) = W.array().col(0) * (T1 * V.transpose()).transpose().array().col(0) + W.array().col(1) * (T2 * V.transpose()).transpose().array().col(0);
+	U.col(1) = W.array().col(0) * (T1 * V.transpose()).transpose().array().col(1) + W.array().col(1) * (T2 * V.transpose()).transpose().array().col(1);
+	U.col(2) = W.array().col(0) * (T1 * V.transpose()).transpose().array().col(2) + W.array().col(1) * (T2 * V.transpose()).transpose().array().col(2);
+
 	PrintPLY("LBS", U, F, W);
 }
 
