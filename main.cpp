@@ -21,6 +21,8 @@
 using namespace std;
 using namespace Eigen;
 
+MatrixXd WeightColor(MatrixXd U, MatrixXi F, MatrixXd W);
+
 typedef vector<Quaterniond, aligned_allocator<Quaterniond>>
 RotationList;
 
@@ -76,6 +78,7 @@ bool pre_draw(igl::opengl::glfw::Viewer &viewer)
 		viewer.data().set_vertices(U);
 		viewer.data().set_points(CT, sea_green);
 		viewer.data().set_edges(CT, BET, sea_green);
+		viewer.data().set_colors(WeightColor(U, F, W));
 
 		recompute = false;
 	}
@@ -133,7 +136,46 @@ int main(int argc, char** argv)
 }
 
 
+MatrixXd WeightColor(MatrixXd U, MatrixXi F, MatrixXd W)
+{
+	double vMax = W.col(0).maxCoeff();
+	double vMin = W.col(0).minCoeff();
 
+	double dv(vMax-vMin);
+
+	MatrixXd RGB;
+	RGB.resize(W.rows(), 3);
+	for (int i=0; i<W.rows(); i++)
+	{
+		double v = W(i,0);
+		int r,g,b;
+
+		if ( v < ( vMin + 0.25 * dv) ) {
+			r = 0;
+			g = (255 * (4 * (v - vMin) / dv));
+			b = 255;
+		}
+		else if ( v < vMin + 0.5 * dv) {
+			r = 0;
+			g = 255;
+			b = (255 * (1 + 4 * (vMin + 0.25 * dv - v) / dv ));
+		}
+		else if ( v < ( vMin + 0.75 * dv) ) {
+			r = (255 * (4 * ( v - vMin - 0.5 * dv) / dv ));
+			g = 255;
+			b = 0;
+		}
+		else {
+			r = 255;
+			g = (255 * (1 + 4 * (vMin + 0.75 * dv - v) / dv ));
+			b = 0;
+		}
+		RGB(i,0) = r;
+		RGB(i,1) = g;
+		RGB(i,2) = b;
+	}
+	return RGB;
+}
 
 
 
