@@ -148,7 +148,7 @@ MatrixXd WeightColor(MatrixXd U, MatrixXi F, MatrixXd W)
 	for (int i=0; i<W.rows(); i++)
 	{
 		double v = W(i,0);
-		int r,g,b;
+		double r,g,b;
 
 		if ( v < ( vMin + 0.25 * dv) ) {
 			r = 0;
@@ -170,10 +170,12 @@ MatrixXd WeightColor(MatrixXd U, MatrixXi F, MatrixXd W)
 			g = (255 * (1 + 4 * (vMin + 0.75 * dv - v) / dv ));
 			b = 0;
 		}
-		RGB(i,0) = r;
-		RGB(i,1) = g;
-		RGB(i,2) = b;
+		RGB(i,0) = r/255.;
+		RGB(i,1) = g/255.;
+		RGB(i,2) = b/255.;
 	}
+
+
 	return RGB;
 }
 
