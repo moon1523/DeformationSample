@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.1)
 
 # Set Variables
 SET(CMAKE_CXX_FLAGS "-std=c++0x") # C++11
-SET(PROJECT_NAME "eigen")
+SET(PROJECT_NAME "week1")
 
 # Project
 PROJECT(${PROJECT_NAME} CXX)
