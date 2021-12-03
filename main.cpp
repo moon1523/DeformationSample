@@ -14,15 +14,12 @@
 #include <igl/directed_edge_orientations.h>
 #include <igl/forward_kinematics.h>
 #include <igl/deform_skeleton.h>
-
 #include <igl/lbs_matrix.h>
 #include <igl/dqs.h>
-
 #include <igl/opengl/glfw/Viewer.h>
 
 using namespace std;
 using namespace Eigen;
-using namespace igl;
 
 typedef vector<Quaterniond, aligned_allocator<Quaterniond>>
 RotationList;
@@ -105,13 +102,11 @@ int main(int argc, char** argv)
 	if (argc > 1)
 		angle = stod(argv[1]);
 
-	RotationList rest_pose;
 
 	igl::readPLY("./cuboid.ply",V,F);  // V: Vertices, F: Face
 	U=V;
 	igl::readTGF("./cuboid.tgf",C,BE); // C: joint points, BE: BonE
 	igl::directed_edge_parents(BE, P); // P: Parents bone ID
-	igl::directed_edge_orientations(C, BE, rest_pose); // rest_pose: set bone rotation
 
 	// Linear weights
 	double minZ = V.col(2).minCoeff();
@@ -119,7 +114,6 @@ int main(int argc, char** argv)
 	W = MatrixXd::Ones(V.rows(), 2);
 	W.col(1) = (V.col(2).array() - minZ) * ( 1 / (maxZ - minZ));
 	W.col(0) -= W.col(1);
-
 
 	igl::opengl::glfw::Viewer viewer;
 	viewer.data().set_mesh(U, F);
@@ -129,7 +123,6 @@ int main(int argc, char** argv)
 	viewer.data().show_lines = true;
 	viewer.data().line_width = 0.5;
 	viewer.data().point_size = 10;
-//	viewer.core().trackball_angle.normalize();
 
 	viewer.callback_pre_draw = &pre_draw;
 	viewer.callback_key_down = &key_down;
