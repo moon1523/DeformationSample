@@ -59,7 +59,7 @@ int main(int argc, char** argv)
 	viewer.data().line_width = 0.5;
 
 	// lambda function
-	viewer.callback_pre_draw = [&](igl::opengl::glfw::Viewer &viewer)->bool {
+	auto pre_draw = [&](igl::opengl::glfw::Viewer &viewer)->bool {
 		RotationList vQ;
 		Quaterniond quat0 = Quaterniond::Identity();
 		Quaterniond quat1(AngleAxisd(angle*M_PI/180, Vector3d::UnitY()));
@@ -75,7 +75,7 @@ int main(int argc, char** argv)
 		return false;
 	};
 
-	viewer.callback_key_down = [&](igl::opengl::glfw::Viewer &viewer, unsigned char key, int mods)->bool {
+	auto key_down = [&](igl::opengl::glfw::Viewer &viewer, unsigned char key, int mods)->bool {
 
 		switch(key) {
 		case 'D':
@@ -85,6 +85,9 @@ int main(int argc, char** argv)
 		}
 		return false;
 	};
+
+	viewer.callback_pre_draw = pre_draw;
+	viewer.callback_key_down = key_down;
 
 	viewer.launch();
 
