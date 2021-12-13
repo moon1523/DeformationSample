@@ -131,13 +131,13 @@ int main(int argc, char *argv[])
   // Plot the mesh with pseudocolors
   igl::opengl::glfw::Viewer viewer;
   viewer.data().set_mesh(U, F);
-  viewer.data().set_data(W.topRows(V.rows()).col(1));
   viewer.data().set_edges(C, BE, RowVector3d(70. / 255., 252. / 255., 167. / 255.));
   viewer.data().show_lines = false;
   viewer.data().show_overlay_depth = false;
   viewer.data().line_width = 1;
 
   double deg(0), deg1(0);
+  int wgt(0);
   viewer.callback_key_down = [&](igl::opengl::glfw::Viewer &_viewer, unsigned char key, int mods) -> bool
   {
     switch (key)
@@ -154,7 +154,16 @@ int main(int argc, char *argv[])
     case '[':
       deg1 --;
       break;
+    case 'W':
+	  wgt ++;
+	  if (wgt==BE.rows()) wgt = 0;
+	  break;
+    case 'Q':
+	  wgt --;
+	  if (wgt<0) wgt = BE.rows()-1;
+	  break;
     }
+
     RotationList vQ(BE.rows(), Quaterniond::Identity());
     vQ[8] = AngleAxisd(deg/180.*M_PI, Vector3d::UnitZ());
     vQ[9] = AngleAxisd(deg/180.*M_PI, -Vector3d::UnitZ());
@@ -166,6 +175,7 @@ int main(int argc, char *argv[])
     vQ[15] = AngleAxisd(deg1/180.*M_PI, -Vector3d::UnitZ());
 
     vector<Vector3d> vT;
+    // propagate relative rotations via FK to retrieve absolute transformations
     igl::forward_kinematics(C, BE, P, vQ, vQ, vT);
     igl::dqs(V, W.topRows(V.rows()), vQ, vT, U);
     _viewer.data().set_vertices(U);
@@ -175,9 +185,18 @@ int main(int argc, char *argv[])
     {
       C1.row(BE(i, 1)) = vQ[i] * C.row(BE(i, 1)) + vT[i];
     }
+
+
+    _viewer.data().set_points(C1, RowVector3d(70. / 255., 252. / 255., 167. / 255.));
     _viewer.data().set_edges(C1, BE, RowVector3d(70. / 255., 252. / 255., 167. / 255.));
+
+    _viewer.data().set_data(W.topRows(V.rows()).col(wgt));
+	int v1 = viewer.data_list[0].id;
+	_viewer.data(v1).point_size = 8;
     return true;
   };
+
+
   viewer.core().is_animating = false;
   cout << "Press '.' to show next weight function." << endl
        << "Press ',' to show previous weight function." << endl
@@ -185,3 +204,69 @@ int main(int argc, char *argv[])
   viewer.launch();
   return EXIT_SUCCESS;
 }
+
+// Inputs: C, BE, P, dQ, dT
+// Outputs: vQ, vT
+
+//    IGL_INLINE void igl::forward_kinematics(
+//      const Eigen::MatrixXd & C,
+//      const Eigen::MatrixXi & BE,
+//      const Eigen::VectorXi & P,
+//      const std::vector<
+//        Eigen::Quaterniond,Eigen::aligned_allocator<Eigen::Quaterniond> > & dQ,
+//      const std::vector<Eigen::Vector3d> & dT,
+//      std::vector<
+//        Eigen::Quaterniond,Eigen::aligned_allocator<Eigen::Quaterniond> > & vQ,
+//      std::vector<Eigen::Vector3d> & vT)
+//    {
+//      using namespace std;
+//      using namespace Eigen;
+//      const int m = BE.rows();
+//      assert(m == P.rows());
+//      assert(m == (int)dQ.size());
+//      assert(m == (int)dT.size());
+//      vector<bool> computed(m,false);
+//      vQ.resize(m);
+//      vT.resize(m);
+//      // Dynamic programming
+//      function<void (int) > fk_helper = [&] (int b)
+//      {
+//        if(!computed[b])
+//        {
+//          if(P(b) < 0)
+//          {
+//            // base case for roots
+//            vQ[b] = dQ[b];
+//            const Vector3d r = C.row(BE(b,0)).transpose();
+//            vT[b] = r-dQ[b]*r + dT[b];
+//          }else
+//          {
+//            // Otherwise first compute parent's
+//            const int p = P(b);
+//            fk_helper(p);
+//            vQ[b] = vQ[p] * dQ[b];
+//            const Vector3d r = C.row(BE(b,0)).transpose();
+//            vT[b] = vT[p] - vQ[b]*r + vQ[p]*(r + dT[b]);
+//          }
+//          computed[b] = true;
+//        }
+//      };
+//      for(int b = 0;b<m;b++)
+//      {
+//        fk_helper(b);
+//      }
+//    }
+//
+//    IGL_INLINE void igl::forward_kinematics(
+//      const Eigen::MatrixXd & C,
+//      const Eigen::MatrixXi & BE,
+//      const Eigen::VectorXi & P,
+//      const std::vector<
+//        Eigen::Quaterniond,Eigen::aligned_allocator<Eigen::Quaterniond> > & dQ,
+//      std::vector<
+//        Eigen::Quaterniond,Eigen::aligned_allocator<Eigen::Quaterniond> > & vQ,
+//      std::vector<Eigen::Vector3d> & vT)
+//    {
+//      std::vector<Eigen::Vector3d> dT(BE.rows(),Eigen::Vector3d(0,0,0));
+//      return forward_kinematics(C,BE,P,dQ,dT,vQ,vT);
+//    }
