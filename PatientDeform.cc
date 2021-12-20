@@ -59,34 +59,33 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	igl::normalize_row_sums(W, W);
 
+	MatrixXd CT = C;
+	MatrixXd jointTrans = MatrixXd::Zero(C.rows(),3);
 
-	MatrixXd CT, jointTrans;
-	CT.resize(C.rows(), 3);
-	CT = C;
-	jointTrans.resize(C.rows(),3);
+	vector<double> scalingVec;
+	for (int i=0;i<BE.rows();i++) {
+		if (i == 12 || i == 13 || i == 14 || i == 15) // legs
+			scalingVec.push_back(1+scalingFactor);
+		else if ( i == 8 || i == 9 || i == 10 || i == 11 ) // arms
+			scalingVec.push_back(1-scalingFactor);
+		else
+			scalingVec.push_back(1.0);
+	}
+
 
 	for (int i=0;i<BE.rows();i++) {
 		Vector3d c0 = C.row(BE(i,0)).transpose();
 		Vector3d c1 = C.row(BE(i,1)).transpose();
-		Vector3d dir = (c0-c1).normalized();
-		double length = (c0-c1).norm();
+		Vector3d dir = (c1-c0).normalized();
+		double length = (c1-c0).norm();
 
-		if ( i == 12 || i == 13 ) { // thigh
-			CT.row(BE(i,1)) = (c1 - dir*length*scalingFactor).transpose();
-		}
-		else if ( i == 14 || i == 15 ) { // calf
-			CT.row(BE(i,1)) = CT.row(BE(i,0)) - (dir*length*(1 + scalingFactor)).transpose();
-		}
-		else if ( i == 8 || i == 9 ) { // upper arm
-			CT.row(BE(i,1)) = (c1 + dir*length*scalingFactor).transpose();
-		}
-		else if ( i == 10 || i == 11 ) // lower arm
-		{
-			CT.row(BE(i,1)) = CT.row(BE(i,0)) - (dir*length*(1 - scalingFactor)).transpose();
-		}
+		if (P(i) < 0)
+			continue;
+
+		CT.row(BE(i,1)) = C.row(BE(P(i),1)) + (dir*length*scalingVec[i]).transpose();
 	}
 
-	jointTrans = CT-C;
+	jointTrans = CT - C;
 	U = VT + W*jointTrans;
 
 	// Plot the mesh with pseudocolors
