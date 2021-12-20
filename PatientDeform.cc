@@ -24,7 +24,7 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-	double scalingFactor = 0.2;
+	double scalingFactor = 0.4;
 	if (argc > 1)
 		scalingFactor = atof(argv[1]);
 
@@ -72,7 +72,6 @@ int main(int argc, char *argv[])
 			scalingVec.push_back(1.0);
 	}
 
-
 	for (int i=0;i<BE.rows();i++) {
 		Vector3d c0 = C.row(BE(i,0)).transpose();
 		Vector3d c1 = C.row(BE(i,1)).transpose();
@@ -82,8 +81,12 @@ int main(int argc, char *argv[])
 		if (P(i) < 0)
 			continue;
 
-		CT.row(BE(i,1)) = C.row(BE(P(i),1)) + (dir*length*scalingVec[i]).transpose();
+		CT.row(BE(i,1)) = CT.row(BE(P(i),1)) + (dir*length*scalingVec[i]).transpose();
 	}
+
+	cout << C << endl;
+	cout << "#" << endl;
+	cout << CT << endl;
 
 	jointTrans = CT - C;
 	U = VT + W*jointTrans;
