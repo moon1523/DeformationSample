@@ -24,6 +24,10 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
+	double scalingFactor = 0.2;
+	if (argc > 1)
+		scalingFactor = atof(argv[1]);
+
 	MatrixXd V, C, U;
 	MatrixXi F, BE;
 	VectorXi P;
@@ -61,21 +65,24 @@ int main(int argc, char *argv[])
 	CT = C;
 	jointTrans.resize(C.rows(),3);
 
-	double scalingFactor = -0.1;
 	for (int i=0;i<BE.rows();i++) {
-		if ( i == 12 || i == 13 || i == 14 || i == 15 ) { // legs
-			Vector3d c0 = C.row(BE(i,0)).transpose();
-			Vector3d c1 = C.row(BE(i,1)).transpose();
-			Vector3d dir = (c0-c1).normalized();
-			double length = (c0-c1).norm();
+		Vector3d c0 = C.row(BE(i,0)).transpose();
+		Vector3d c1 = C.row(BE(i,1)).transpose();
+		Vector3d dir = (c0-c1).normalized();
+		double length = (c0-c1).norm();
+
+		if ( i == 12 || i == 13 ) { // thigh
+			CT.row(BE(i,1)) = (c1 - dir*length*scalingFactor).transpose();
+		}
+		else if ( i == 14 || i == 15 ) { // calf
+			CT.row(BE(i,1)) = CT.row(BE(i,0)) - (dir*length*(1 + scalingFactor)).transpose();
+		}
+		else if ( i == 8 || i == 9 ) { // upper arm
 			CT.row(BE(i,1)) = (c1 + dir*length*scalingFactor).transpose();
 		}
-		else if ( i == 8 || i == 9 || i == 10 || i == 11 ) { // arm
-			Vector3d c0 = C.row(BE(i,0)).transpose();
-			Vector3d c1 = C.row(BE(i,1)).transpose();
-			Vector3d dir = (c0-c1).normalized();
-			double length = (c0-c1).norm();
-			CT.row(BE(i,1)) = (c1 - dir*length*scalingFactor).transpose();
+		else if ( i == 10 || i == 11 ) // lower arm
+		{
+			CT.row(BE(i,1)) = CT.row(BE(i,0)) - (dir*length*(1 - scalingFactor)).transpose();
 		}
 	}
 
@@ -85,8 +92,8 @@ int main(int argc, char *argv[])
 	// Plot the mesh with pseudocolors
 	igl::opengl::glfw::Viewer viewer;
 	viewer.data().set_mesh(U, F);
-	viewer.data().set_points(C, RowVector3d(70. / 255., 252. / 255., 167. / 255.));
-	viewer.data().set_edges(C, BE, RowVector3d(70. / 255., 252. / 255., 167. / 255.));
+	viewer.data().set_points(CT, RowVector3d(70. / 255., 252. / 255., 167. / 255.));
+	viewer.data().set_edges(CT, BE, RowVector3d(70. / 255., 252. / 255., 167. / 255.));
 	viewer.data().show_lines = false;
 	viewer.data().show_overlay_depth = false;
 	viewer.data().line_width = 1;
